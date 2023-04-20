@@ -1,6 +1,6 @@
 package expo.modules.devlauncher.helpers
 
-import java.lang.Exception
+import android.os.Build
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
@@ -19,15 +19,24 @@ fun <T> Class<T>.getFieldInClassHierarchy(fieldName: String): Field? {
 
 fun <T> Class<out T>.setProtectedDeclaredField(obj: T, filedName: String, newValue: Any, predicate: (Any?) -> Boolean = { true }) {
   val field = getDeclaredField(filedName)
-  val modifiersField = Field::class.java.getDeclaredField("accessFlags")
-
   field.isAccessible = true
-  modifiersField.isAccessible = true
 
-  modifiersField.setInt(
-    field,
-    field.modifiers and Modifier.FINAL.inv()
-  )
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    try {
+      // accessFlags is supported only by API >=23
+      val modifiersField = Field::class.java.getDeclaredField("accessFlags")
+      modifiersField.isAccessible = true
+
+      modifiersField.setInt(
+        field,
+        field.modifiers and Modifier.FINAL.inv()
+      )
+    } catch (e: NoSuchFieldException) {
+      e.printStackTrace()
+    } catch (e: IllegalAccessException) {
+      e.printStackTrace()
+    }
+  }
 
   if (!predicate.invoke(field.get(obj))) {
     return
