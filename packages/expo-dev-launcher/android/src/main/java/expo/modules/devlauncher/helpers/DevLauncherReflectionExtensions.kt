@@ -1,24 +1,18 @@
-package expo.modules.devlauncher.helpers
+package expo.modules.devmenu.helpers
 
 import android.os.Build
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
 
-fun <T> Class<T>.getFieldInClassHierarchy(fieldName: String): Field? {
-  var currentClass: Class<*>? = this
-  var result: Field? = null
-  while (currentClass != null && result == null) {
-    try {
-      result = currentClass.getDeclaredField(fieldName)
-    } catch (e: Exception) {
-    }
-    currentClass = currentClass.superclass
-  }
-  return result
+@Suppress("UNCHECKED_CAST")
+fun <T, R> Class<out T>.getPrivateDeclaredFieldValue(fieldName: String, obj: T): R {
+  val field = getDeclaredField(fieldName)
+  field.isAccessible = true
+  return field.get(obj) as R
 }
 
-fun <T> Class<out T>.setProtectedDeclaredField(obj: T, filedName: String, newValue: Any, predicate: (Any?) -> Boolean = { true }) {
-  val field = getDeclaredField(filedName)
+fun <T> Class<out T>.setPrivateDeclaredFieldValue(fieldName: String, obj: T, newValue: Any) {
+  val field = getDeclaredField(fieldName)
   field.isAccessible = true
 
   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -38,17 +32,5 @@ fun <T> Class<out T>.setProtectedDeclaredField(obj: T, filedName: String, newVal
     }
   }
 
-  if (!predicate.invoke(field.get(obj))) {
-    return
-  }
-
   field.set(obj, newValue)
-}
-
-fun <T, U> Class<out T>.getProtectedFieldValue(obj: T, filedName: String): U {
-  val field = getDeclaredField(filedName)
-  field.isAccessible = true
-
-  @Suppress("UNCHECKED_CAST")
-  return field.get(obj) as U
 }
