@@ -3,17 +3,12 @@ package expo.modules
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.ViewGroup
 import androidx.collection.ArrayMap
-import com.facebook.react.ReactActivity
-import com.facebook.react.ReactActivityDelegate
-import com.facebook.react.ReactDelegate
-import com.facebook.react.ReactInstanceEventListener
-import com.facebook.react.ReactInstanceManager
-import com.facebook.react.ReactNativeHost
-import com.facebook.react.ReactRootView
+import com.facebook.react.*
 import com.facebook.react.bridge.ReactContext
 import com.facebook.react.modules.core.PermissionListener
 import expo.modules.core.interfaces.ReactActivityLifecycleListener
@@ -90,9 +85,20 @@ class ReactActivityDelegateWrapper(
     if (newDelegate != null && newDelegate != this) {
       val mDelegateField = ReactActivity::class.java.getDeclaredField("mDelegate")
       mDelegateField.isAccessible = true
-      val modifiers = Field::class.java.getDeclaredField("accessFlags")
-      modifiers.isAccessible = true
-      modifiers.setInt(mDelegateField, mDelegateField.modifiers and Modifier.FINAL.inv())
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        try {
+          // accessFlags is supported only by API >=23
+          val modifiersField = Field::class.java.getDeclaredField("accessFlags")
+          modifiersField.isAccessible = true
+          modifiersField.setInt(mDelegateField, mDelegateField.modifiers and Modifier.FINAL.inv())
+        } catch (e: NoSuchFieldException) {
+          e.printStackTrace()
+        } catch (e: IllegalAccessException) {
+          e.printStackTrace()
+        }
+      }
+
       mDelegateField.set(activity, newDelegate)
       delegate = newDelegate
 
